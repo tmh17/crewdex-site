@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrewDex — Your film &amp; TV crew Rolodex</title>
+<meta name="description" content="A private, on-device crew directory for film and TV. Import the crew already in your contacts in minutes, tag them by role, city, and specialty, then filter and share clean contact cards. Ratings and notes never leave your phone.">
+<link rel="canonical" href="https://crewdex.tylermarkhenderson.com/">
+<meta name="theme-color" content="#06294C">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="icon" type="image/png" href="assets/icon-512.png">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="CrewDex — Your film &amp; TV crew Rolodex">
+<meta property="og:description" content="Filter your crew by role and city, then text a clean contact card in seconds. Your ratings and notes never leave your phone.">
+<meta property="og:url" content="https://crewdex.tylermarkhenderson.com/">
+<meta property="og:image" content="https://crewdex.tylermarkhenderson.com/assets/icon-512.png">
+<meta name="twitter:card" content="summary">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Azeret+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   CrewDex — "The Line"
+   One division organizes the page: what leaves your phone sits on white,
+   what never does sits in the blue field. The division is drawn by the
+   color boundary alone — no 1px rule; Tyler removed it.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; }
+
+/* Components below declare display:inline-flex, which outranks the UA
+   [hidden] rule. Without this the crossing shows both of its buttons. */
+[hidden] { display: none !important; }
+
+.vh {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+}
+
+:root {
+  /* Brand — carried from lib/theme/app_theme.dart */
+  --blue:        #185FA5;
+  --blue-deep:   #0C447C;
+  --blue-abyss:  #06294C;
+  --blue-tint:   #E6F1FB;
+  --blue-border: #B5D4F4;
+
+  /* Tag categories — same mapping as the app */
+  --role-text: #0C447C;  --role-tint: #E6F1FB;  --role-border: #B5D4F4;
+  --loc-text:  #085041;  --loc-tint:  #E1F5EE;  --loc-border:  #9FE1CB;
+  --spec-text: #26215C;  --spec-tint: #EEEDFE;  --spec-border: #CECBF6;
+  --pers-text: #412402;  --pers-tint: #FAEEDA;  --pers-border: #FAC775;
+  --star:      #EF9F27;
+
+  --ink:      #0F1419;
+  --ink-soft: #4A5560;
+  --ink-dim:  #5A6672;   /* >=4.5:1 on the tinted --paper-2 ground too */
+  --paper:    #FFFFFF;
+  --paper-2:  #F6F8FA;
+  --rule:     #D8E0E8;
+
+  /* On the blue field */
+  --on-blue:       #FFFFFF;
+  --on-blue-soft:  #B9D2EC;
+  --on-blue-dim:   #8FB4D8;
+  --rule-blue:     rgba(255,255,255,.26);
+
+  --line-x: 50%;
+  --gut: clamp(20px, 4.4vw, 68px);
+  --maxw: 1440px;
+
+  --ease: cubic-bezier(.16,.84,.34,1);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Archivo', system-ui, -apple-system, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ── The spine ─────────────────────────────────────────────────────────
+   Every band draws the rule at the same x. Bands sit flush, so the
+   rule reads as one continuous line from masthead to footer. */
+.band {
+  position: relative;
+  max-width: var(--maxw);
+  margin: 0 auto;
+}
+/* The 1px spine was removed at Tyler's direction: the shared/private division
+   is carried by the color fields alone — white against the blue abyss — and
+   by the SENT / PRIVATE labels in the crossing. No band paints a rule. */
+.band::before { display: none; }
+/* Private (blue) left, sent (paper) right — same direction as the crossing. */
+.band--split {
+  background: linear-gradient(to right, var(--blue-abyss) 0 50%, var(--paper) 50% 100%);
+}
+.band--blue { background: var(--blue-abyss); color: var(--on-blue); }
+.band--blue::before { background: var(--rule-blue); }
+.band--split::before { background: rgba(255,255,255,.30); }
+.band--dim { background: var(--paper-2); }
+
+/* The rule exists only where it means something: it appears with the two
+   sides at the demo panel, carries them through the crossing, and stops.
+   Below that it would be a column divider wearing the concept's clothes. */
+.band--norule::before { display: none; }
+
+.half { padding: clamp(38px, 5vw, 76px) var(--gut); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; }
+
+/* ── Type ──────────────────────────────────────────────────────────── */
+h1, h2, h3 { margin: 0; font-weight: 900; letter-spacing: -.03em; line-height: 1.02; }
+h1 { font-size: clamp(2.4rem, 5.4vw, 4.6rem); font-stretch: 122%; text-wrap: balance; }
+h2 { font-size: clamp(1.9rem, 3.5vw, 3.1rem); font-stretch: 118%; text-wrap: balance; }
+h3 { font-size: clamp(1.15rem, 1.6vw, 1.45rem); font-stretch: 110%; letter-spacing: -.02em; }
+p  { margin: 0 0 1em; max-width: 68ch; }
+a  { color: inherit; }
+
+.lede { font-size: clamp(1.02rem, 1.28vw, 1.2rem); color: var(--ink-soft); line-height: 1.62; }
+.band--blue .lede, .on-blue .lede { color: var(--on-blue-soft); }
+
+/* Column labels — set in Archivo, not mono: these name things, they
+   don't measure them. */
+.collabel {
+  font-size: 12px; font-weight: 700; font-stretch: 108%;
+  letter-spacing: .13em; text-transform: uppercase;
+  color: var(--ink-dim); margin: 0 0 20px;
+}
+.on-blue .collabel { color: var(--on-blue-dim); }
+
+/* Mono is reserved for counts, field names and literal output. */
+.mono { font-family: 'Azeret Mono', ui-monospace, monospace; }
+
+/* ── Masthead ──────────────────────────────────────────────────────── */
+.masthead { display: grid; grid-template-columns: 1fr 1fr; align-items: center; }
+.brand {
+  display: flex; align-items: center; gap: 13px;
+  padding: 17px var(--gut); text-decoration: none;
+  font-weight: 900; font-stretch: 118%; font-size: 1.32rem; letter-spacing: -.03em;
+}
+.mark { width: 30px; height: 30px; flex: none; color: var(--blue); }
+.mast-right {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: clamp(14px, 2vw, 30px); padding: 17px var(--gut);
+}
+.mast-right a {
+  font-size: 14.5px; font-weight: 600; text-decoration: none; color: var(--ink-soft);
+  padding: 6px 0; border-bottom: 1.5px solid transparent;
+}
+.mast-right a:hover { color: var(--blue); border-bottom-color: var(--blue); }
+
+.status {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--blue-deep); background: var(--blue-tint);
+  border: 1px solid var(--blue-border); border-radius: 999px; padding: 6px 13px 6px 11px;
+}
+.status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); flex: none; }
+
+/* ── Hero ──────────────────────────────────────────────────────────── */
+.hero-head { padding: clamp(40px, 4.6vw, 66px) var(--gut) clamp(34px, 4vw, 54px); }
+.hero-head h1 { max-width: 21ch; }
+.hero-head .lede { margin-top: 22px; max-width: 60ch; }
+
+/* The demo panel: what you send | what stays */
+.demo { align-items: stretch; }
+.demo .on-blue { color: var(--on-blue); }
+
+.bubble {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 20px 20px 20px 6px;
+  padding: 20px 24px;
+  max-width: 400px;
+  font-size: 16.5px;
+  line-height: 1.72;
+  box-shadow: 0 8px 22px -14px rgba(15,20,25,.4);
+}
+.bubble .nm { font-weight: 800; font-size: 18px; letter-spacing: -.02em; display: block; }
+.bubble .rl { color: var(--ink-soft); display: block; }
+.bubble .ct { font-family: 'Azeret Mono', ui-monospace, monospace; font-size: 14.5px; display: block; }
+.bubble-note { font-size: 13.5px; color: var(--ink-dim); margin: 14px 0 0; max-width: 400px; }
+
+/* The private record */
+.record { max-width: 420px; }
+.rec-top { display: flex; align-items: center; gap: 15px; margin-bottom: 6px; }
+.avatar {
+  width: 54px; height: 54px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+  background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.22);
+  font-weight: 800; font-size: 17px; letter-spacing: .01em;
+}
+.rec-name { font-weight: 900; font-size: 1.5rem; font-stretch: 112%; letter-spacing: -.03em; line-height: 1.1; }
+.stars { display: flex; gap: 3px; margin-top: 5px; }
+.stars svg { width: 15px; height: 15px; color: var(--star); }
+
+.fieldrow { border-top: 1px solid var(--rule-blue); padding: 15px 0 4px; margin-top: 16px; }
+.fieldname {
+  font-family: 'Azeret Mono', ui-monospace, monospace;
+  font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--on-blue-dim); margin-bottom: 10px;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip {
+  font-size: 13.5px; font-weight: 600; padding: 5px 12px; border-radius: 999px;
+  border: 1px solid; white-space: nowrap;
+}
+.chip.role { color: #CFE4FA; background: rgba(24,95,165,.42);  border-color: rgba(181,212,244,.5); }
+.chip.loc  { color: #B6E8D6; background: rgba(15,110,86,.42);   border-color: rgba(159,225,203,.45); }
+.chip.spec { color: #CFCBF7; background: rgba(107,75,184,.4);   border-color: rgba(206,203,246,.42); }
+.chip.pers { color: #FBD9A2; background: rgba(133,79,11,.44);   border-color: rgba(250,199,117,.42); }
+
+.note-text { color: var(--on-blue-soft); font-size: 15px; line-height: 1.62; margin: 0; }
+
+/* ── Buttons ───────────────────────────────────────────────────────── */
+.cta-row { display: flex; flex-wrap: wrap; gap: 13px; align-items: center; margin-top: 30px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: inherit; font-size: 16px; font-weight: 700; font-stretch: 106%;
+  padding: 15px 26px; border-radius: 12px; border: 1.5px solid transparent;
+  text-decoration: none; cursor: pointer; letter-spacing: -.01em;
+  transition: background .2s var(--ease), color .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease);
+}
+.btn svg { width: 19px; height: 19px; flex: none; }
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: var(--blue-deep); transform: translateY(-1px); }
+.btn-ghost { border-color: var(--rule); color: var(--ink); background: transparent; }
+.btn-ghost:hover { border-color: var(--blue); color: var(--blue); }
+.on-blue .btn-primary { background: #fff; color: var(--blue-abyss); }
+.on-blue .btn-primary:hover { background: var(--blue-tint); }
+
+/* App Store slot — inactive until the app is approved */
+.pending {
+  display: inline-flex; align-items: center; gap: 11px;
+  padding: 13px 20px; border-radius: 12px;
+  border: 1.5px dashed var(--rule); color: var(--ink-dim);
+  font-size: 14px; line-height: 1.3; cursor: not-allowed;
+}
+.pending svg { width: 22px; height: 22px; flex: none; opacity: .55; }
+.pending b { display: block; font-size: 15px; font-weight: 700; color: var(--ink-soft); letter-spacing: -.01em; }
+
+:where(a, button, summary):focus-visible {
+  outline: 2.5px solid var(--blue);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.band--blue :where(a, button):focus-visible,
+.band--split .on-blue :where(a, button):focus-visible { outline-color: #fff; }
+
+/* ── The crossing ──────────────────────────────────────────────────── */
+.crossing-head { padding: clamp(56px, 7vw, 104px) var(--gut) 0; grid-column: 1 / -1; }
+.crossing-head h2 { max-width: 20ch; }
+.crossing-head .lede { margin-top: 18px; max-width: 56ch; }
+
+/* Desktop keeps the vertical rule; these are the mobile axis only. */
+.crossbar, .landing { display: none; }
+
+.stage {
+  position: relative;
+  grid-column: 1 / -1;
+  padding: clamp(30px, 3.4vw, 46px) var(--gut) clamp(40px, 4.6vw, 64px);
+  overflow: hidden;
+}
+.stage-inner {
+  position: relative;
+  min-height: 340px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  --pad: clamp(18px, 2.6vw, 40px);
+}
+/* PRIVATE owns the left column; SENT waits on the right. */
+.side-label {
+  font-size: 12px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+  color: var(--on-blue-dim);
+  grid-column: 1; grid-row: 1;
+}
+.side-label.sent { color: var(--on-blue-soft); padding-left: var(--pad); grid-column: 2; grid-row: 1; }
+
+/* The travel element fills its column, so translateX(100%) sends the card
+   exactly one column right — out of PRIVATE and into SENT. */
+.travel {
+  position: relative;
+  grid-column: 1; grid-row: 2;
+  width: 100%;
+  padding-right: var(--pad);
+  margin-top: 26px;
+  transition: transform 1.05s var(--ease);
+  will-change: transform;
+}
+.travel .tcard { max-width: 400px; }
+.stage.sent .travel { transform: translateX(calc(100% + var(--pad))); }
+
+.tcard {
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 16px;
+  padding: 22px 24px;
+  backdrop-filter: blur(2px);
+  transition: background .8s var(--ease), border-color .8s var(--ease), box-shadow .8s var(--ease);
+}
+.stage.sent .tcard {
+  background: var(--paper);
+  border-color: var(--rule);
+  box-shadow: 0 18px 40px -22px rgba(15,20,25,.55);
+}
+.stage.sent .tcard .rec-name,
+.stage.sent .tcard .avatar { color: var(--ink); }
+.stage.sent .tcard .avatar { background: var(--blue-tint); border-color: var(--blue-border); color: var(--blue-deep); }
+.stage.sent .tcard .fieldrow { border-top-color: var(--rule); }
+.stage.sent .tcard .fieldname { color: var(--ink-dim); }
+.stage.sent .tcard .chip.role { color: var(--role-text); background: var(--role-tint); border-color: var(--role-border); }
+.stage.sent .tcard .chip.loc  { color: var(--loc-text);  background: var(--loc-tint);  border-color: var(--loc-border); }
+.stage.sent .tcard .contactline { color: var(--ink-soft); }
+
+.tcard .rec-name, .tcard .avatar { transition: color .8s var(--ease), background .8s var(--ease), border-color .8s var(--ease); }
+.tcard .fieldrow, .tcard .fieldname, .tcard .chip, .tcard .contactline { transition: color .8s var(--ease), background .8s var(--ease), border-color .8s var(--ease); }
+
+.contactline {
+  font-family: 'Azeret Mono', ui-monospace, monospace;
+  font-size: 14px; color: var(--on-blue-soft); line-height: 1.85;
+}
+
+/* Fields that fall away at the line */
+.drops {
+  overflow: hidden;
+  max-height: 220px;
+  opacity: 1;
+  filter: blur(0);
+  /* Only max-height is animated (the collapse itself); margin and padding
+     snap, which is imperceptible under the opacity/blur fade. */
+  transition: max-height .62s var(--ease), opacity .42s var(--ease),
+              filter .42s var(--ease);
+}
+.stage.sent .drops {
+  max-height: 0; opacity: 0; filter: blur(7px);
+  margin-top: 0; padding-top: 0; padding-bottom: 0;
+}
+
+.shed-note {
+  grid-column: 2; grid-row: 3; align-self: start; margin-top: 26px;
+  padding-left: var(--pad);
+  max-width: 40ch; font-size: 14.5px; color: var(--on-blue-soft);
+  opacity: 0; transition: opacity .5s var(--ease) .55s;
+}
+.stage.sent .shed-note { opacity: 1; }
+
+.replay {
+  display: inline-flex; align-items: center; gap: 9px;
+  background: none; border: 1px solid var(--rule-blue); color: var(--on-blue-soft);
+  font-family: inherit; font-size: 13.5px; font-weight: 600;
+  padding: 9px 16px; border-radius: 999px; cursor: pointer;
+  transition: border-color .2s, color .2s;
+}
+.replay:hover { border-color: #fff; color: #fff; }
+.replay svg { width: 15px; height: 15px; }
+.stage-controls { grid-column: 1 / -1; margin-top: 30px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+/* The stage sits on the blue field but outside any .on-blue scope, so it
+   needs the inverted primary explicitly or it sinks into its own ground. */
+.stage-controls .btn-primary { background: #fff; color: var(--blue-abyss); }
+.stage-controls .btn-primary:hover { background: var(--blue-tint); }
+.stage-controls .btn-primary[disabled] {
+  background: rgba(255,255,255,.16); color: var(--on-blue-soft);
+  cursor: default; pointer-events: none;
+}
+
+/* ── Feature blocks ────────────────────────────────────────────────── */
+/* Copy and image start on a shared baseline rather than floating centred
+   against a much taller screenshot. */
+.feat { align-items: start; }
+.feat .copy { padding: clamp(44px, 5vw, 78px) var(--gut) clamp(40px, 4.4vw, 68px); }
+.feat .shot { padding: clamp(44px, 5vw, 78px) var(--gut) clamp(30px, 3.4vw, 50px); display: flex; justify-content: center; }
+.feat h3 { margin-bottom: 15px; }
+.feat p { color: var(--ink-soft); font-size: 16.5px; }
+.feat .lede { color: var(--ink-soft); }
+
+/* Middle beat: the field returns and the phone straddles the rule, so the
+   line organises the image instead of just parting two boxes. */
+.feat--field { background: var(--blue-abyss); color: var(--on-blue); }
+.feat--field::before { background: var(--rule-blue); }
+.feat--field h3 { color: #fff; }
+.feat--field p { color: var(--on-blue-soft); }
+.feat--field .phone { border-color: rgba(255,255,255,.22); box-shadow: 0 34px 70px -30px rgba(0,0,0,.75); }
+/* The field alone carries this beat. An earlier straddle overhung the rule
+   by too little to read as deliberate, and clipped off-screen on mobile. */
+.feat--field .shot { justify-content: center; }
+
+/* Third beat runs compact — the rhythm resolves rather than repeating. */
+.feat--compact .copy { padding-top: clamp(38px, 4vw, 58px); }
+.feat--compact .shot { padding-top: clamp(38px, 4vw, 58px); }
+.feat--compact .phone { max-width: 246px; }
+
+.phone {
+  width: 100%; max-width: 285px; height: auto;
+  border-radius: 26px; border: 1px solid var(--rule);
+  box-shadow: 0 30px 60px -34px rgba(15,20,25,.55);
+  background: #fff;
+}
+.feat--lead .phone { max-width: 312px; }
+
+.count {
+  display: inline-block; margin-top: 6px;
+  font-family: 'Azeret Mono', ui-monospace, monospace;
+  font-size: 13px; color: var(--blue-deep);
+  background: var(--blue-tint); border: 1px solid var(--blue-border);
+  border-radius: 7px; padding: 5px 11px;
+}
+
+/* ── Steps ─────────────────────────────────────────────────────────── */
+.steps-head { grid-column: 1 / -1; padding: clamp(56px, 7vw, 100px) var(--gut) 8px; }
+.step { display: contents; }
+.step-n {
+  padding: 26px var(--gut) 26px;
+  border-top: 1px solid var(--rule);
+  display: flex; align-items: baseline; gap: 16px;
+}
+.step-n .num {
+  font-family: 'Azeret Mono', ui-monospace, monospace;
+  font-size: 14px; color: var(--ink-dim); flex: none; padding-top: 3px;
+}
+.step-body { padding: 26px var(--gut) 26px; border-top: 1px solid var(--rule); }
+.step-body p { margin: 0; color: var(--ink-soft); font-size: 16px; }
+.step:last-child .step-n, .step:last-child .step-body { border-bottom: 1px solid var(--rule); }
+
+/* ── FAQ ───────────────────────────────────────────────────────────── */
+.faq-head { grid-column: 1 / -1; padding: clamp(56px, 7vw, 100px) var(--gut) 8px; }
+.qa { display: contents; }
+.q {
+  padding: 26px var(--gut); border-top: 1px solid var(--rule);
+  font-weight: 700; font-size: 17.5px; font-stretch: 106%; letter-spacing: -.02em;
+}
+.a { padding: 26px var(--gut); border-top: 1px solid var(--rule); }
+.a p { margin: 0; color: var(--ink-soft); font-size: 16px; }
+.a p + p { margin-top: .7em; }
+.qa:last-child .q, .qa:last-child .a { border-bottom: 1px solid var(--rule); }
+.a a { color: var(--blue); font-weight: 600; text-underline-offset: 3px; }
+
+/* ── Privacy band ──────────────────────────────────────────────────── */
+.privacy-band .half { padding: clamp(52px, 6.5vw, 100px) var(--gut); }
+.privacy-band h2 { max-width: 15ch; }
+.privacy-list { list-style: none; margin: 0; padding: 0; }
+.privacy-list li {
+  padding: 14px 0 14px 32px; position: relative;
+  border-bottom: 1px solid var(--rule-blue);
+  color: var(--on-blue-soft); font-size: 16px;
+}
+.privacy-list li:last-child { border-bottom: 0; }
+.privacy-list svg {
+  position: absolute; left: 0; top: 18px; width: 18px; height: 18px; color: #7FD9B8;
+}
+.privacy-list b { color: #fff; font-weight: 700; }
+
+/* ── Footer ────────────────────────────────────────────────────────── */
+.foot { background: var(--paper-2); border-top: 1px solid var(--rule); }
+.foot-in {
+  max-width: var(--maxw); margin: 0 auto;
+  padding: 44px var(--gut);
+  display: flex; flex-wrap: wrap; gap: 24px 48px; justify-content: space-between; align-items: flex-start;
+}
+.foot a { color: var(--ink-soft); text-decoration: none; }
+.foot a:hover { color: var(--blue); text-decoration: underline; }
+.foot-links { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 15px; }
+.foot-meta { font-size: 13.5px; color: var(--ink-dim); line-height: 1.75; }
+.foot .mark { width: 24px; height: 24px; }
+
+.synthetic {
+  font-size: 12.5px; color: var(--ink-dim);
+  border-top: 1px solid var(--rule); padding-top: 18px; margin-top: 4px; max-width: 62ch;
+}
+.band--blue .synthetic, .on-blue .synthetic { color: var(--on-blue-dim); border-color: var(--rule-blue); }
+
+/* ── Reveal ────────────────────────────────────────────────────────── */
+.rv { opacity: 0; transform: translateY(14px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
+.rv.in { opacity: 1; transform: none; }
+
+/* ── Mobile: the line rotates ──────────────────────────────────────── */
+@media (max-width: 900px) {
+  :root { --line-x: 100%; }
+  .band::before { display: none; }
+  .grid2, .masthead, .stage-inner { grid-template-columns: 1fr; }
+
+  /* The split becomes a stack, divided by a horizontal rule. */
+  .band--split { background: var(--paper); }
+  .band--split .on-blue {
+    background: var(--blue-abyss);
+    border-top: 1px solid rgba(255,255,255,.26);
+  }
+
+  .masthead { grid-template-columns: 1fr auto; align-items: center; }
+  .mast-right { padding-left: 0; gap: 16px; }
+
+  .feat .shot { padding-top: 0; }
+  .feat--rev .copy { order: -1; }
+
+  /* Steps and FAQ stack: label then body, rule only above the label. */
+  .step-n { padding-bottom: 0; border-bottom: 0; }
+  .step-body { border-top: 0; padding-top: 10px; }
+  .step:last-child .step-n { border-bottom: 0; }
+  .q { padding-bottom: 0; }
+  .a { border-top: 0; padding-top: 10px; }
+  .qa:last-child .q { border-bottom: 0; }
+
+  /* The rule rotates rather than disappearing. PRIVATE sits above it, SENT
+     below, and the card genuinely travels from one side of it to the other —
+     into landing space that is reserved from the start, so nothing shifts. */
+  .stage-inner { min-height: 0; display: flex; flex-direction: column; }
+  .side-label { padding-left: 0; margin: 0 0 12px; order: 1; }
+  .travel { order: 2; padding-right: 0; }
+  .crossbar { order: 3; }
+  .side-label.sent { order: 4; }
+  .landing { order: 5; }
+  .shed-note { order: 6; padding-left: 0; }
+
+  .crossbar { display: block; height: 1px; background: var(--rule-blue); margin: 20px 0 12px; }
+
+  .travel {
+    grid-column: 1; width: 100%; max-width: 420px;
+    margin: 0; padding-left: 0;
+    position: relative; z-index: 2;
+    transition: transform .95s var(--ease);
+  }
+  .stage.sent .travel { transform: translateY(calc(100% + 46px)); }
+
+  /* Must clear the tallest the card gets at the narrowest width, or the
+     landed card sits on top of the shed-note. */
+  .landing { display: block; min-height: 384px; }
+  .shed-note { margin-top: 4px; }
+}
+
+@media (max-width: 560px) {
+  body { font-size: 16px; }
+  .cta-row { gap: 10px; }
+  .btn, .pending { width: 100%; justify-content: center; }
+  /* Keep all three nav links on a 390px screen without overflowing. */
+  .brand { font-size: 1.18rem; gap: 10px; }
+  .mark { width: 26px; height: 26px; }
+  .mast-right { gap: 13px; }
+  .mast-right a { font-size: 13.5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+  .rv { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+<!--
+  THESIS: One division separates what leaves your phone from what never does,
+  drawn by the color boundary alone — white against the blue field, no drawn
+  rule; refuses the phone-screenshot-beside-copy app landing.
+  OWN-WORLD: CrewDex blue (#185FA5 / #06294C) owning half the surface as a
+  field against white; Archivo expanded-black display, Azeret Mono reserved for
+  counts, field names and literal output; the app's own tag palette (role blue,
+  location green, specialty violet, personal amber); division drawn by the
+  color boundary, not a rule.
+  STORY: A film/TV freelancer sees that the crew they already carry in their
+  contacts becomes a private, filterable directory in minutes, understands that
+  ratings and notes physically cannot escape, and asks to be told at launch.
+  FIRST VIEWPORT: Headline, lede and primary action on clean white; the blue
+  field enters at the demo panel directly below, whose left half holds the
+  person's full private record — stars, specialty tags, working note — and
+  whose right half holds the text card that gets sent. Private left, sent
+  right, page-wide.
+  FORM: The privacy split, candidate 5 of 7; seed key 8a49a3fc.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the
+  finish review, the verdict, and DESIGN.md
+-->
+
+<!-- Mark, defined once, reused by <use>. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="cd-mark" viewBox="0 0 100 100">
+    <mask id="cd-mark-cut">
+      <rect width="100" height="100" fill="#000"/>
+      <path d="M69.15 33.93 A25 25 0 1 0 69.15 66.07" fill="none" stroke="#fff" stroke-width="17" stroke-linecap="round"/>
+      <circle cx="44.38" cy="25.64" r="5.1" fill="#000"/>
+      <circle cx="31.42" cy="33.27" r="5.1" fill="#000"/>
+      <circle cx="25.14" cy="47.39" r="5.1" fill="#000"/>
+      <circle cx="28.35" cy="62.50" r="5.1" fill="#000"/>
+    </mask>
+    <rect width="100" height="100" fill="currentColor" mask="url(#cd-mark-cut)"/>
+  </symbol>
+  <symbol id="i-star" viewBox="0 0 24 24">
+    <path d="M12 2.6l2.9 5.87 6.48.94-4.69 4.57 1.11 6.45L12 17.38l-5.8 3.05 1.11-6.45L2.62 9.41l6.48-.94z" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-check" viewBox="0 0 24 24">
+    <path d="M20 6.5L9.5 17 4 11.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24">
+    <rect x="2.75" y="4.75" width="18.5" height="14.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
+    <path d="M3.5 7.5l8.5 6 8.5-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="i-apple" viewBox="0 0 24 24">
+    <path d="M16.4 12.7c0-2.4 2-3.6 2.1-3.6-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.2-2.9.9-3.6.9s-1.9-.9-3.1-.8c-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.5.8 1.2 1.7 2.4 3 2.4 1.2 0 1.6-.8 3.1-.8s1.9.8 3.1.7c1.3 0 2.1-1.2 2.9-2.3.9-1.3 1.3-2.6 1.3-2.7-.1 0-2.5-1-2.6-3.8zM14 5.5c.7-.8 1.1-1.9 1-3-1 0-2.2.6-2.9 1.5-.6.7-1.2 1.9-1 3 1.1.1 2.2-.6 2.9-1.5z" fill="currentColor"/>
+  </symbol>
+  <symbol id="i-replay" viewBox="0 0 24 24">
+    <path d="M3.5 12a8.5 8.5 0 108.5-8.5A8.4 8.4 0 006 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M3 2.5V7h4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+</svg>
+
+<header class="band band--norule masthead">
+  <a class="brand" href="/crewdex/">
+    <svg class="mark" aria-hidden="true"><use href="#cd-mark"/></svg>
+    CrewDex
+  </a>
+  <nav class="mast-right" aria-label="Primary">
+    <a href="#how-to">How it works</a>
+    <a href="#support">Support</a>
+    <a href="privacy.html">Privacy</a>
+  </nav>
+</header>
+
+<!-- ═══ HERO ═══ -->
+<section class="band band--norule">
+  <div class="hero-head">
+    <h1>Your crew is already in your contacts. Make it a private directory.</h1>
+    <p class="lede">Import your contacts, say yes to a few suggested tags, and you've got
+      a crew directory you can filter in seconds. It all stays on your phone —
+      no account, no cloud.</p>
+
+    <div class="cta-row">
+      <span class="status"><span class="dot"></span>In App Review</span>
+    </div>
+    <div class="cta-row" style="margin-top:14px">
+      <a class="btn btn-primary" href="mailto:tyler@tylermarkhenderson.com?subject=CrewDex%20—%20tell%20me%20when%20it%20launches">
+        <svg aria-hidden="true"><use href="#i-mail"/></svg>
+        Email me at launch
+      </a>
+      <!-- ══ APP STORE LINK ══════════════════════════════════════════
+           When CrewDex is approved, replace this whole .pending block
+           with:
+           <a class="btn btn-ghost" href="APP_STORE_URL_HERE">
+             <svg aria-hidden="true"><use href="#i-apple"/></svg>
+             Download on the App Store
+           </a>
+           ═══════════════════════════════════════════════════════════ -->
+      <span class="pending">
+        <svg aria-hidden="true"><use href="#i-apple"/></svg>
+        <span><b>App Store</b>Link goes live at approval</span>
+      </span>
+    </div>
+  </div>
+</section>
+
+<section class="band band--split">
+  <div class="grid2 demo">
+    <div class="half on-blue">
+      <p class="collabel">What stays on your phone</p>
+      <div class="record">
+        <div class="rec-top">
+          <div class="avatar" aria-hidden="true">MO</div>
+          <div>
+            <div class="rec-name">Maya Okafor</div>
+            <div class="stars" role="img" aria-label="Your private rating: 5 out of 5">
+              <svg aria-hidden="true"><use href="#i-star"/></svg>
+              <svg aria-hidden="true"><use href="#i-star"/></svg>
+              <svg aria-hidden="true"><use href="#i-star"/></svg>
+              <svg aria-hidden="true"><use href="#i-star"/></svg>
+              <svg aria-hidden="true"><use href="#i-star"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="fieldrow">
+          <div class="fieldname">Tags</div>
+          <div class="chips">
+            <span class="chip role">Gaffer</span>
+            <span class="chip loc">Atlanta</span>
+            <span class="chip spec">Balloon Light</span>
+            <span class="chip spec">Night Exteriors</span>
+            <span class="chip pers">A-Team</span>
+          </div>
+        </div>
+
+        <div class="fieldrow">
+          <div class="fieldname">Notes</div>
+          <p class="note-text">Ran the condor on the Tulsa night work without a hitch.
+            First call for big night exteriors. Books out early in the fall.</p>
+        </div>
+      </div>
+      <p class="synthetic">Maya Okafor is an example record, written to show the app's fields.</p>
+    </div>
+
+    <div class="half">
+      <p class="collabel">What you send</p>
+      <div class="bubble">
+        <span class="nm">Maya Okafor</span>
+        <span class="rl">Gaffer · Atlanta</span>
+        <span class="ct"><span aria-hidden="true">📞</span><span class="vh">Phone: </span> (404) 555-0182</span>
+        <span class="ct"><span aria-hidden="true">✉️</span><span class="vh">Email: </span> maya@example.com</span>
+      </div>
+      <p class="bubble-note">The exact text CrewDex produces. Five fields, nothing else.
+        A <span class="mono">.vcf</span> card carries the same five.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ THE CROSSING ═══ -->
+<section class="band band--blue grid2" id="crossing">
+  <div class="crossing-head">
+    <h2>Five fields cross the line. Nothing else can.</h2>
+    <p class="lede">Star ratings, notes, specialty tags, and personal tags are excluded from
+      shared output: the plain-text card and the <span class="mono">.vcf</span> file alike.
+      That rule is written into the share formatter and guarded by an automated test that has
+      to pass before any release can ship.</p>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="stage-inner">
+      <p class="side-label">Private</p>
+      <p class="side-label sent">Sent</p>
+
+      <div class="travel">
+        <div class="tcard">
+          <div class="rec-top">
+            <div class="avatar" aria-hidden="true">MO</div>
+            <div>
+              <div class="rec-name">Maya Okafor</div>
+              <div class="stars drops" role="img" aria-label="Private rating, not shared">
+                <svg aria-hidden="true"><use href="#i-star"/></svg>
+                <svg aria-hidden="true"><use href="#i-star"/></svg>
+                <svg aria-hidden="true"><use href="#i-star"/></svg>
+                <svg aria-hidden="true"><use href="#i-star"/></svg>
+                <svg aria-hidden="true"><use href="#i-star"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="fieldrow">
+            <div class="fieldname">Tags</div>
+            <div class="chips">
+              <span class="chip role">Gaffer</span>
+              <span class="chip loc">Atlanta</span>
+              <span class="chip spec drops">Balloon Light</span>
+              <span class="chip spec drops">Night Exteriors</span>
+              <span class="chip pers drops">A-Team</span>
+            </div>
+          </div>
+
+          <div class="fieldrow">
+            <div class="fieldname">Contact</div>
+            <div class="contactline">
+              <span aria-hidden="true">📞</span><span class="vh">Phone: </span> (404) 555-0182<br>
+              <span aria-hidden="true">✉️</span><span class="vh">Email: </span> maya@example.com
+            </div>
+          </div>
+
+          <div class="fieldrow drops">
+            <div class="fieldname">Notes</div>
+            <p class="note-text">Ran the condor on the Tulsa night work without a hitch.
+              First call for big night exteriors.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="crossbar" aria-hidden="true"></div>
+      <div class="landing" aria-hidden="true"></div>
+
+      <p class="shed-note">The rating, the working note, and the specialty and personal
+        tags never made it across. They stayed in the app.</p>
+    </div>
+
+    <div class="stage-controls">
+      <button class="btn btn-primary" id="send-btn" type="button">Share Maya's card</button>
+      <button class="btn btn-primary" id="replay-btn" type="button" hidden>
+        <svg aria-hidden="true"><use href="#i-replay"/></svg>
+        Replay
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ WHAT IT DOES ═══ -->
+<section class="band band--norule grid2 feat feat--lead rv">
+  <div class="copy">
+    <h3>Your whole crew, imported in minutes</h3>
+    <p>No retyping, no starting from scratch. Point CrewDex at your address book and pull
+      in everyone — or just the iPhone groups worth having: crew, and not your dentist.
+      Duplicates are spotted and skipped as they come in.</p>
+    <p>Rather not grant contacts access at all? Add people by hand and you'll never even
+      see the permission prompt. Either way, importing copies people <b>into</b> CrewDex —
+      your address book itself is never touched.</p>
+  </div>
+  <div class="shot">
+    <img class="phone" src="assets/rs2_import_groups.png" width="620" height="1341" loading="lazy" decoding="async"
+      alt="The CrewDex import screen listing iPhone contact groups with checkboxes for choosing which to import.">
+  </div>
+</section>
+
+<section class="band band--norule grid2 feat feat--rev feat--field rv">
+  <div class="shot">
+    <img class="phone" src="assets/rs4_tag_review.png" width="620" height="1341" loading="lazy" decoding="async"
+      alt="CrewDex suggesting the tag Gaffer for Maya Okafor, with the reason: because Job Title says Gaffer.">
+  </div>
+  <div class="copy">
+    <h3>Tags proposed from what's already there</h3>
+    <p>CrewDex reads the job titles, companies, and iPhone group names already sitting in
+      your contacts and proposes tags one person at a time, and tells you why it picked
+      each one. Swipe right to apply, left to skip, or say yes to all and be done.
+      Nothing is applied without your OK.</p>
+    <p>The matching is a plain lookup table, not a guess. No fuzzy matching, no model,
+      no data leaving the phone to make it work.</p>
+  </div>
+</section>
+
+<section class="band band--norule grid2 feat feat--compact rv">
+  <div class="copy">
+    <h3>Stack filters until one name is left</h3>
+    <p>Your phone's address book knows names and numbers. It doesn't know who's a gaffer,
+      who's in Atlanta, or who you'd hire again. Once your crew is tagged, stack those tags:
+      <b>Gaffer</b> plus <b>Atlanta</b> narrows an eighty-seven-person directory to the four
+      who can actually take the call.</p>
+    <span class="count">4 of 87 contacts match</span>
+  </div>
+  <div class="shot">
+    <img class="phone" src="assets/rs1_filtered_list.png" width="620" height="1341" loading="lazy" decoding="async"
+      alt="CrewDex crew list filtered by the tags Gaffer and Atlanta, showing four matching crew members with private star ratings.">
+  </div>
+</section>
+
+<!-- ═══ HOW TO USE ═══ -->
+<section class="band band--norule grid2" id="how-to">
+  <div class="steps-head">
+    <h2>Getting set up</h2>
+    <p class="lede">Five steps, once. After that it's a filter and a share.</p>
+  </div>
+
+  <div class="step">
+    <div class="step-n"><span class="num">01</span><h3>Bring your crew in</h3></div>
+    <div class="step-body"><p>Import from your contacts (everything, or only the groups
+      you choose), or tap the <b>+</b> button and add people by hand. Manual entry works
+      without granting any permission at all.</p></div>
+  </div>
+
+  <div class="step">
+    <div class="step-n"><span class="num">02</span><h3>Run the tag review</h3></div>
+    <div class="step-body"><p>CrewDex proposes role, city, and specialty tags from what it
+      found. Take them one at a time, accept them all at once, or stop and finish later.
+      The queue waits for you, and a banner on the crew list brings you back to it.</p></div>
+  </div>
+
+  <div class="step">
+    <div class="step-n"><span class="num">03</span><h3>Add what only you know</h3></div>
+    <div class="step-body"><p>Star anyone one to five. Write a note about how the job
+      actually went. Add personal tags like <b>A-Team</b>. This is the layer that makes the
+      directory worth keeping, and it is the layer that can never be shared.</p></div>
+  </div>
+
+  <div class="step">
+    <div class="step-n"><span class="num">04</span><h3>Filter, then share</h3></div>
+    <div class="step-body"><p>Open Filters, stack the tags you need, and swipe right on
+      anyone to send their card. Share the whole filtered list at once when a coordinator
+      needs options. The share log remembers who you referred and when.</p></div>
+  </div>
+
+  <div class="step">
+    <div class="step-n"><span class="num">05</span><h3>Crew up a job</h3></div>
+    <div class="step-body"><p>The role board turns your tags into slots for a specific
+      show, so you can see the positions you've filled and the ones still open. Membership
+      follows your role tags, so anything you tag anywhere shows up here immediately.</p></div>
+  </div>
+</section>
+
+<!-- ═══ PRIVACY ═══ -->
+<section class="band band--norule band--blue grid2 privacy-band">
+  <div class="half">
+    <h2>No account. No server. No sync.</h2>
+    <p class="lede">CrewDex was built for people whose contact list is their livelihood.
+      There is nowhere for that list to go, because there is no cloud behind the app at all,
+      which is also why it keeps working on a set with no signal.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="privacy.html">Read the privacy policy</a>
+    </div>
+  </div>
+  <div class="half on-blue">
+    <ul class="privacy-list">
+      <li><svg aria-hidden="true"><use href="#i-check"/></svg><b>Everything is stored on your device.</b> Contacts, tags, notes, and ratings live in a local database and are never uploaded.</li>
+      <li><svg aria-hidden="true"><use href="#i-check"/></svg><b>No analytics, no tracking, no third-party SDKs</b> reporting on how you use it.</li>
+      <li><svg aria-hidden="true"><use href="#i-check"/></svg><b>Your address book is never modified.</b> Importing copies people in; it doesn't write anything back.</li>
+      <li><svg aria-hidden="true"><use href="#i-check"/></svg><b>Contacts access is optional</b>. The app explains itself before iOS asks, and manual entry skips the prompt entirely.</li>
+      <li><svg aria-hidden="true"><use href="#i-check"/></svg><b>Deleting the app deletes the data.</b> There is no copy anywhere else.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══ SUPPORT / FAQ ═══ -->
+<section class="band band--norule grid2" id="support">
+  <div class="faq-head">
+    <h2>Support</h2>
+    <p class="lede">Email is the fastest way to reach me, and I read everything. Write to
+      <a href="mailto:tyler@tylermarkhenderson.com?subject=CrewDex%20Support" style="color:var(--blue);font-weight:600">tyler@tylermarkhenderson.com</a>.
+      Bugs, feature requests, and "this made no sense to me" are all welcome.</p>
+  </div>
+
+  <div class="qa">
+    <div class="q">What does CrewDex cost?</div>
+    <div class="a"><p>CrewDex Pro is $0.99 per month and auto-renews monthly until you
+      cancel, after a 7-day free trial. Apple runs the trial and the billing. Cancel any time
+      from your iPhone's subscription settings; cancelling during the trial costs nothing.</p>
+      <p>To be straight with you: the subscription isn't an upgrade tier. After the trial,
+      Pro is what opens the app — there's no limited free version underneath it.</p>
+      <p><a href="privacy.html">Privacy policy</a> ·
+        <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/">Terms of Use</a></p></div>
+  </div>
+
+  <div class="qa">
+    <div class="q">Where is my data stored?</div>
+    <div class="a"><p>On your phone. CrewDex has no servers, no accounts, and no cloud sync.
+      Nothing you enter leaves the device unless you choose to share a contact card.</p></div>
+  </div>
+
+  <div class="qa">
+    <div class="q">What exactly gets included when I share someone?</div>
+    <div class="a"><p>Name, role, location, phone, and email. Your star ratings, notes,
+      specialty tags, and personal tags are never included: not in the text card, not in the
+      <span class="mono">.vcf</span> file.</p></div>
+  </div>
+
+  <div class="qa">
+    <div class="q">Does CrewDex change my address book?</div>
+    <div class="a"><p>No. Importing copies the contacts you pick into CrewDex. Your device
+      address book is never modified, and nothing is written back to it.</p></div>
+  </div>
+
+  <div class="qa">
+    <div class="q">Do I have to grant contacts permission?</div>
+    <div class="a"><p>No. You can add crew manually without granting anything. Import just
+      makes the first hour faster. If you've given iOS limited contacts access, CrewDex
+      tells you and offers a shortcut to the setting.</p></div>
+  </div>
+
+  <div class="qa">
+    <div class="q">Does it work without a signal?</div>
+    <div class="a"><p>Yes. That is the point. Everything runs against the local database,
+      so filtering and sharing work in a basement, a stage, or the middle of nowhere.</p></div>
+  </div>
+
+  <div class="qa">
+    <div class="q">How do I delete my data?</div>
+    <div class="a"><p>Delete the app. All CrewDex data goes with it. There is no server-side
+      copy to request, because there is no server.</p></div>
+  </div>
+
+  <div class="qa">
+    <div class="q">What device do I need?</div>
+    <div class="a"><p>An iPhone. CrewDex is portrait, iPhone-only by design, because it is built to be
+      used one-handed while you're doing something else. There's no iPad or Android version
+      right now.</p></div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="foot-in">
+    <div>
+      <a class="brand" href="/crewdex/" style="padding:0;gap:10px;font-size:1.1rem">
+        <svg class="mark" aria-hidden="true"><use href="#cd-mark"/></svg>
+        CrewDex
+      </a>
+      <p class="foot-meta" style="margin:12px 0 0">Your film &amp; TV crew Rolodex.<br>
+        Made by a working DP.</p>
+    </div>
+    <div class="foot-links">
+      <a href="#how-to">How it works</a>
+      <a href="#support">Support</a>
+      <a href="privacy.html">Privacy policy</a>
+      <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/">Terms of Use</a>
+      <a href="mailto:tyler@tylermarkhenderson.com?subject=CrewDex">Contact</a>
+    </div>
+    <div class="foot-meta">
+      Hightide · Tyler Mark Henderson, DP<br>
+      <a href="https://www.tylermarkhenderson.com">tylermarkhenderson.com</a><br>
+      © 2026 Tyler Mark Henderson
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── The crossing ─────────────────────────────────────────────────── */
+  var stage  = document.getElementById('stage');
+  var send   = document.getElementById('send-btn');
+  var replay = document.getElementById('replay-btn');
+
+  /* One live control at a time. A disabled slab left where the primary
+     action was reads as broken, not as an explanation — the shed-note
+     underneath is what says what happened. */
+  function setSent(sent, moveFocus) {
+    stage.classList.toggle('sent', sent);
+    send.hidden = sent;
+    replay.hidden = !sent;
+    if (moveFocus) (sent ? replay : send).focus({ preventScroll: true });
+  }
+
+  send.addEventListener('click', function () { setSent(true, true); });
+  replay.addEventListener('click', function () { setSent(false, true); });
+
+  /* Play it once when the stage is properly in view — not the moment its
+     top edge clips in — so nobody arrives to find it already finished. */
+  if (!reduce && 'IntersectionObserver' in window) {
+    var once = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var r = e.boundingClientRect;
+        if (r.top > window.innerHeight * 0.5) return;
+        once.disconnect();
+        setTimeout(function () {
+          if (!stage.classList.contains('sent')) setSent(true, false);
+        }, 550);
+      });
+    }, { threshold: [0.35, 0.6] });
+    once.observe(stage);
+  }
+
+  /* ── Section reveals ──────────────────────────────────────────────── */
+  var rvs = document.querySelectorAll('.rv');
+  if (reduce || !('IntersectionObserver' in window)) {
+    rvs.forEach(function (el) { el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.14, rootMargin: '0px 0px -8% 0px' });
+    rvs.forEach(function (el) { io.observe(el); });
+  }
+})();
+</script>
+</body>
+</html>
